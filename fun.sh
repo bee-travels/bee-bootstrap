@@ -1,0 +1,1 @@
+echo hiiiiiii $1 $2 $3

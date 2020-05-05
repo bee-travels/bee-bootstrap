@@ -1,0 +1,12 @@
+{
+  "name": "bee-bootstrap",
+  "version": "0.0.1",
+  "description": "service generator",
+  "main": "index.js",
+  "repository": "https://github.com/bee-travels/bee-bootstrap.git",
+  "author": "Nick <bourdakos1@gmail.com>",
+  "license": "MIT",
+  "bin": {
+    "bee-bootstrap": "fun.sh"
+  }
+}
