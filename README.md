@@ -1,0 +1,2 @@
+# bee-bootstrap
+service generator
