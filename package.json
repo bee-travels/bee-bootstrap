@@ -7,6 +7,6 @@
   "author": "Nick <bourdakos1@gmail.com>",
   "license": "MIT",
   "bin": {
-    "bee-bootstrap": "fun.sh"
+    "bee-bootstrap": "bootstrap"
   }
 }
