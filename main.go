@@ -7,53 +7,188 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+
+	"github.com/mitchellh/go-homedir"
 )
 
 type Data struct {
 	ServiceNamePill, ServiceNameTitle, ServiceNameLower, Route, Port string
 }
 
+var Usage string
+
+func init() {
+	Usage = "Usage:\n\nyarn dlx bee-bootstrap <BASE_URL>\nor\nnpx bee-bootstrap <BASE_URL>"
+}
+
 func main() {
-	fileUrl := "https://github.com/bee-travels/node-service-template/archive/master.zip"
-	//defer Cleanup("download.zip", "template")
-
-	if err := DownloadFile("download.zip", fileUrl); err != nil {
-		panic(err)
+	if len(os.Args) < 2 {
+		fmt.Println(Usage)
+		os.Exit(0)
 	}
 
-	err := Unzip("download.zip", "template")
+	baseUrl := os.Args[1]
+	fileURL := baseUrl + "/archive/master.zip"
+
+	/*Service name (destination-basic):
+	Service route (destinations):
+	Service port (9201): */
+	var serviceName string
+	var route string
+	var port string
+
+	fmt.Print("Service name (destination-basic): ")
+	fmt.Scan(&serviceName)
+
+	fmt.Print("Service route (destinations): ")
+	fmt.Scan(&route)
+
+	fmt.Print("Service port (9000): ")
+	fmt.Scan(&port)
+
+	data, err := GetData(serviceName, route, port)
 	if err != nil {
-		panic(err)
+		fmt.Println("error : ", err)
+		os.Exit(1)
 	}
 
-	/*
-			.ServiceNamePill = destination-basic
-		.ServiceNameTitle = Destination Basic
-		.ServiceNameLower = destination basic
-		.Route = destinations
-		.Port = 9201
-	*/
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		fmt.Println("error getting home directory ", err)
+		os.Exit(1)
+	}
 
-	data := Data{"destination-basic", "Destination Basic", "destination basic", "destinations", "9201"}
+	fmt.Println(homeDir)
+	path := homeDir + "/.bee-bootstrap"
+	CheckFolder(path)
 
-	// files, err := OSReadDir("./template")
-	// fmt.Println(files)
-	ListFilesRecursive("template", data)
+	defer Cleanup(path+"/download.zip", path+"/template")
+
+	if err := DownloadFile(path+"/download.zip", fileURL); err != nil {
+		fmt.Println("could not download file ", err)
+		os.Exit(1)
+	}
+
+	err = Unzip(path+"/download.zip", path+"/template")
+	if err != nil {
+		fmt.Println("could not unzip file ", err)
+		os.Exit(1)
+	}
+
+	err = ProcessFiles(path+"/template", *data)
+	if err != nil {
+		fmt.Println("could not process files ", err)
+	}
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Println(pwd)
+	err = MoveFile(path+"/template", data.ServiceNamePill)
+	if err != nil {
+		fmt.Println("could not move file", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Done!")
+}
+
+func MoveFile(root, dst string) error {
+	// os.Rename("/Users/mofizur.rahman@ibm.com/.bee-bootstrap/template/node-service-template-master",
+	// 	"./destination-service")
+	files, err := OSReadDir(root)
+	if err != nil {
+		return err
+	}
+
+	if len(files) != 1 {
+		return fmt.Errorf("expected only one file")
+	}
+
+	src := root + "/" + files[0]
+
+	err = os.Rename(src, dst)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetData(serviceNamePill, route, port string) (*Data, error) {
+	if serviceNamePill == "" || route == "" || port == "" {
+		return nil, fmt.Errorf("no data provided")
+	}
+
+	if strings.Contains(serviceNamePill, "_") {
+		return nil, fmt.Errorf("do not use _ in service names")
+	}
+
+	route = strings.ToLower(route)
+
+	if _, err := strconv.Atoi(port); err != nil {
+		return nil, fmt.Errorf("port should be a number")
+	}
+
+	serviceName := strings.ReplaceAll(serviceNamePill, "-", " ")
+	serviceNamePill = strings.ToLower(serviceNamePill)
+	serviceNameTitle := strings.ToTitle(serviceName)
+	serviceNameLower := strings.ToLower(serviceName)
+
+	return &Data{
+		ServiceNamePill:  serviceNamePill,
+		ServiceNameLower: serviceNameLower,
+		ServiceNameTitle: serviceNameTitle,
+		Route:            route,
+		Port:             port,
+	}, nil
 
 }
 
-func ListFilesRecursive(folder string, data Data) error {
+// OSReadDir returns the list of directory/file in a folder
+func OSReadDir(root string) ([]string, error) {
+	var files []string
+	f, err := os.Open(root)
+	if err != nil {
+		return files, err
+	}
+	fileInfo, err := f.Readdir(-1)
+	f.Close()
+	if err != nil {
+		return files, err
+	}
+
+	for _, file := range fileInfo {
+		files = append(files, file.Name())
+	}
+	return files, nil
+}
+
+// CheckFolder if the folder does not exist create it
+func CheckFolder(path string) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Println("creating folder : ", path)
+		os.Mkdir(path, 0777)
+	}
+}
+
+// ProcessFiles with the template data
+func ProcessFiles(folder string, data Data) error {
 	err := filepath.Walk(folder,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
-			fmt.Println(path)
+
 			if info.Mode().IsRegular() {
+				fmt.Println(path)
 				b, err := ioutil.ReadFile(path)
 				if err != nil {
 					return err
@@ -90,6 +225,7 @@ func ListFilesRecursive(folder string, data Data) error {
 	return nil
 }
 
+// Cleanup folder
 func Cleanup(filepaths ...string) error {
 	for _, filepath := range filepaths {
 		fi, err := os.Stat(filepath)
@@ -110,24 +246,7 @@ func Cleanup(filepaths ...string) error {
 	return nil
 }
 
-func OSReadDir(root string) ([]string, error) {
-	var files []string
-	f, err := os.Open(root)
-	if err != nil {
-		return files, err
-	}
-	fileInfo, err := f.Readdir(-1)
-	f.Close()
-	if err != nil {
-		return files, err
-	}
-
-	for _, file := range fileInfo {
-		files = append(files, file.Name())
-	}
-	return files, nil
-}
-
+// Unzip from src to destination
 func Unzip(src, dest string) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
