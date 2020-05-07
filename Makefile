@@ -1,2 +1,2 @@
 build: 
-	go build -o bootstrap .; npm link
+	go build -o bin/bootstrap .

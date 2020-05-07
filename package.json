@@ -6,7 +6,16 @@
   "repository": "https://github.com/bee-travels/bee-bootstrap.git",
   "author": "Nick <bourdakos1@gmail.com>",
   "license": "MIT",
-  "bin": {
-    "bee-bootstrap": "bootstrap"
+  "scripts" : {
+    "postinstall": "go-npm install",
+    "preuninstall": "go-npm uninstall"
+  },
+  "dependencies": {
+    "go-npm": "^0.1.9"
+  },
+  "goBinary": {
+    "name": "bee-bootstrap",
+    "path": "./bin",
+    "url": "https://github.com/bee-travels/bee-bootstrap/releases/download/v{{version}}/bee-bootstrap_{{platform}}_{{arch}}.tar.gz"
   }
 }

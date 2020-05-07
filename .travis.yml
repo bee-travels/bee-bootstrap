@@ -1,0 +1,20 @@
+language: go
+go: 1.13.x
+os: linux
+dist: xenial
+
+jobs:
+  include:
+    - stage: deploy
+      if: tag IS present
+      node_js: "12"
+      script: curl -sL https://git.io/goreleaser | bash
+      before_deploy:
+        npm version $TRAVIS_TAG
+      deploy:
+        provider: npm
+        email: "$NPM_EMAIL"
+        api_key: "$NPM_TOKEN"
+        skip_cleanup: true
+        on:
+          tags: true
