@@ -10,7 +10,7 @@ jobs:
       node_js: "12"
       script: curl -sL https://git.io/goreleaser | bash
       before_deploy:
-        npm version "${TRAVIS_TAG:1}"
+        npm version "${TRAVIS_TAG:1} --allow-same-version"
       deploy:
         provider: npm
         email: "$NPM_EMAIL"
