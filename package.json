@@ -4,7 +4,7 @@
   "description": "service generator",
   "main": "index.js",
   "repository": "https://github.com/bee-travels/bee-bootstrap.git",
-  "author": "Nick <bourdakos1@gmail.com>",
+  "author": "Nick <bourdakos1@gmail.com>, Mofi <moficodes@gmail.com>",
   "license": "MIT",
   "scripts" : {
     "postinstall": "go-npm install",
