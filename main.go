@@ -24,7 +24,7 @@ type Data struct {
 var Usage string
 
 func init() {
-	Usage = "Usage:\n\nyarn dlx bee-bootstrap <BASE_URL>\nor\nnpx bee-bootstrap <BASE_URL>"
+	Usage = "Usage:\n  bee-bootstrap [<github-url> | node | python | go]"
 }
 
 func main() {
@@ -33,8 +33,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	baseUrl := os.Args[1]
-	fileURL := baseUrl + "/archive/master.zip"
+	baseURL := os.Args[1]
+	var fileURL string
+	if strings.HasPrefix(baseURL, "https://") || strings.HasPrefix(baseURL, "http://") {
+		fileURL = baseURL + "/archive/master.zip"
+	} else if strings.HasPrefix(baseURL, "github.com/") {
+		fileURL = "https://" + baseURL + "/archive/master.zip"
+	} else {
+		fileURL = "https://github.com/bee-travels/" + baseURL + "-service-template/archive/master.zip"
+	}
 
 	/*Service name (destination-basic):
 	Service route (destinations):
@@ -127,6 +134,10 @@ func GetData(serviceNamePill, route, port string) (*Data, error) {
 		return nil, fmt.Errorf("no data provided")
 	}
 
+	if strings.Contains(serviceNamePill, " ") {
+		return nil, fmt.Errorf("service name should not contain spaces")
+	}
+
 	if strings.Contains(serviceNamePill, "_") {
 		return nil, fmt.Errorf("do not use _ in service names")
 	}
@@ -137,10 +148,9 @@ func GetData(serviceNamePill, route, port string) (*Data, error) {
 		return nil, fmt.Errorf("port should be a number")
 	}
 
-	serviceName := strings.ReplaceAll(serviceNamePill, "-", " ")
 	serviceNamePill = strings.ToLower(serviceNamePill)
-	serviceNameTitle := strings.ToTitle(serviceName)
-	serviceNameLower := strings.ToLower(serviceName)
+	serviceNameLower := strings.ReplaceAll(serviceNamePill, "-", " ")
+	serviceNameTitle := strings.Title(serviceNameLower)
 
 	return &Data{
 		ServiceNamePill:  serviceNamePill,
