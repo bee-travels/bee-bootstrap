@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/mitchellh/go-homedir"
 )
@@ -205,7 +205,12 @@ func ProcessFiles(folder string, data Data) error {
 				}
 
 				filecontent := string(b)
-				fileTemplate := template.Must(template.New("file").Parse(filecontent))
+				fileTemplate, err := template.New("file").Parse(filecontent)
+
+				if err != nil {
+					return nil
+				}
+
 				buf := new(bytes.Buffer)
 
 				if err := fileTemplate.Execute(buf, data); err != nil {
